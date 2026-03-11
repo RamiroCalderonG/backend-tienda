@@ -32,7 +32,8 @@ class VentaItem(Base):
     venta_id: Mapped[str] = mapped_column(String, ForeignKey("ventas.id"), nullable=False)
     producto_id: Mapped[Optional[str]] = mapped_column(String, ForeignKey("productos.id"), nullable=True)
     nombre: Mapped[str] = mapped_column(String, nullable=False)   # snapshot
-    precio: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)  # snapshot
+    precio: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)       # snapshot
+    costo_unitario: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False, default=0)  # snapshot
     cantidad: Mapped[int] = mapped_column(Integer, nullable=False)
     subtotal: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
 

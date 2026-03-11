@@ -11,6 +11,7 @@ from app.dependencies.auth import get_current_user
 from app.models.user import User
 from app.models.venta import Venta, VentaItem, MetodoPago
 from app.models.producto import Producto
+from app.models.inventario import MovimientoInventario
 from app.schemas.reportes import ResumenPeriodo, VentaDia, ProductoTop, ProductoStockBajo, MapaVentas, SlotVenta
 
 router = APIRouter(prefix="/reportes", tags=["reportes"])
@@ -53,13 +54,49 @@ async def resumen(
         )
     )
     row = result.one()
+    total = float(row.total)
+
+    # Costo de lo vendido en el período (snapshot de costo_unitario)
+    r_costo = await db.execute(
+        select(
+            func.coalesce(func.sum(VentaItem.costo_unitario * VentaItem.cantidad), 0).label("costo")
+        )
+        .join(Venta, VentaItem.venta_id == Venta.id)
+        .where(
+            Venta.store_id == current_user.store_id,
+            Venta.created_at >= start,
+            Venta.created_at <= end,
+        )
+    )
+    costo_ventas = float(r_costo.scalar())
+
+    # Inversión: lo gastado en restocks del período (costo actual del producto)
+    r_inv = await db.execute(
+        select(
+            func.coalesce(
+                func.sum(MovimientoInventario.cantidad * Producto.costo), 0
+            ).label("inversion")
+        )
+        .join(Producto, MovimientoInventario.producto_id == Producto.id)
+        .where(
+            MovimientoInventario.store_id == current_user.store_id,
+            MovimientoInventario.tipo == "restock",
+            MovimientoInventario.created_at >= start,
+            MovimientoInventario.created_at <= end,
+        )
+    )
+    inversion = float(r_inv.scalar())
+
     return ResumenPeriodo(
         fecha_inicio=fecha_inicio,
         fecha_fin=fecha_fin,
         num_ventas=row.num_ventas,
-        total=float(row.total),
+        total=total,
         efectivo=float(row.efectivo),
         transferencia=float(row.transferencia),
+        costo_ventas=costo_ventas,
+        ganancia=total - costo_ventas,
+        inversion=inversion,
     )
 
 

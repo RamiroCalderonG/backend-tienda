@@ -65,6 +65,7 @@ async def crear_venta(
             producto_id=producto.id,
             nombre=producto.nombre,
             precio=float(producto.precio),
+            costo_unitario=float(producto.costo),
             cantidad=cantidad,
             subtotal=subtotal,
         ))
