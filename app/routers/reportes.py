@@ -63,6 +63,7 @@ async def resumen(
                 func.sum(MovimientoInventario.cantidad * Producto.costo), 0
             ).label("inversion")
         )
+        .select_from(MovimientoInventario)
         .join(Producto, MovimientoInventario.producto_id == Producto.id)
         .where(
             MovimientoInventario.store_id == current_user.store_id,
@@ -80,6 +81,7 @@ async def resumen(
                 func.sum(func.abs(MovimientoInventario.cantidad) * Producto.costo), 0
             ).label("merma")
         )
+        .select_from(MovimientoInventario)
         .join(Producto, MovimientoInventario.producto_id == Producto.id)
         .where(
             MovimientoInventario.store_id == current_user.store_id,
