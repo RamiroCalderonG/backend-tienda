@@ -10,9 +10,9 @@ class ResumenPeriodo(BaseModel):
     total: float
     efectivo: float
     transferencia: float
-    costo_ventas: float
-    ganancia: float
     inversion: float
+    merma: float
+    ganancia: float   # total - inversion
 
 
 class VentaDia(BaseModel):

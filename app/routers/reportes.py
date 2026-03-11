@@ -56,21 +56,7 @@ async def resumen(
     row = result.one()
     total = float(row.total)
 
-    # Costo de lo vendido en el período (snapshot de costo_unitario)
-    r_costo = await db.execute(
-        select(
-            func.coalesce(func.sum(VentaItem.costo_unitario * VentaItem.cantidad), 0).label("costo")
-        )
-        .join(Venta, VentaItem.venta_id == Venta.id)
-        .where(
-            Venta.store_id == current_user.store_id,
-            Venta.created_at >= start,
-            Venta.created_at <= end,
-        )
-    )
-    costo_ventas = float(r_costo.scalar())
-
-    # Inversión: lo gastado en restocks del período (costo actual del producto)
+    # Inversión: lo gastado en restocks del período
     r_inv = await db.execute(
         select(
             func.coalesce(
@@ -87,6 +73,23 @@ async def resumen(
     )
     inversion = float(r_inv.scalar())
 
+    # Merma declarada en el período (informativo)
+    r_merma = await db.execute(
+        select(
+            func.coalesce(
+                func.sum(func.abs(MovimientoInventario.cantidad) * Producto.costo), 0
+            ).label("merma")
+        )
+        .join(Producto, MovimientoInventario.producto_id == Producto.id)
+        .where(
+            MovimientoInventario.store_id == current_user.store_id,
+            MovimientoInventario.tipo == "merma",
+            MovimientoInventario.created_at >= start,
+            MovimientoInventario.created_at <= end,
+        )
+    )
+    merma = float(r_merma.scalar())
+
     return ResumenPeriodo(
         fecha_inicio=fecha_inicio,
         fecha_fin=fecha_fin,
@@ -94,9 +97,9 @@ async def resumen(
         total=total,
         efectivo=float(row.efectivo),
         transferencia=float(row.transferencia),
-        costo_ventas=costo_ventas,
-        ganancia=total - costo_ventas,
         inversion=inversion,
+        merma=merma,
+        ganancia=total - inversion,
     )
 
 
