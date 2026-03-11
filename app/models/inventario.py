@@ -16,6 +16,7 @@ class MovimientoInventario(Base):
     cantidad: Mapped[int] = mapped_column(Integer, nullable=False)
     stock_antes: Mapped[int] = mapped_column(Integer, nullable=False)
     stock_despues: Mapped[int] = mapped_column(Integer, nullable=False)
+    tipo: Mapped[Optional[str]] = mapped_column(String, nullable=True)   # restock | merma | muestra | otro
     notas: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), nullable=False)
     user_name: Mapped[str] = mapped_column(String, nullable=False)         # snapshot
