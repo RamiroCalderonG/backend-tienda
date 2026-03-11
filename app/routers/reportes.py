@@ -11,7 +11,7 @@ from app.dependencies.auth import get_current_user
 from app.models.user import User
 from app.models.venta import Venta, VentaItem, MetodoPago
 from app.models.producto import Producto
-from app.schemas.reportes import ResumenPeriodo, VentaDia, ProductoTop, ProductoStockBajo
+from app.schemas.reportes import ResumenPeriodo, VentaDia, ProductoTop, ProductoStockBajo, MapaVentas, SlotVenta
 
 router = APIRouter(prefix="/reportes", tags=["reportes"])
 
@@ -176,3 +176,71 @@ async def stock_bajo(
         )
         for p in productos
     ]
+
+
+_SLOTS = [
+    (7,  9,  "7:00 - 9:00"),
+    (9,  11, "9:00 - 11:00"),
+    (11, 13, "11:00 - 13:00"),
+    (13, 15, "13:00 - 15:00"),
+    (15, 17, "15:00 - 17:00"),
+    (17, 19, "17:00 - 19:00"),
+    (19, 21, "19:00 - 21:00"),
+]
+
+
+@router.get("/mapa-ventas", response_model=MapaVentas)
+async def mapa_ventas(
+    fecha_inicio: date = Query(default=None),
+    fecha_fin: date = Query(default=None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if fecha_inicio is None:
+        fecha_inicio = date.today().replace(day=1)
+    if fecha_fin is None:
+        fecha_fin = date.today()
+
+    start, end = _rango(fecha_inicio, fecha_fin)
+
+    result = await db.execute(
+        select(
+            cast(Venta.created_at, Date).label("fecha"),
+            func.extract("hour", Venta.created_at).label("hora"),
+            func.sum(Venta.total).label("total"),
+        ).where(
+            Venta.store_id == current_user.store_id,
+            Venta.created_at >= start,
+            Venta.created_at <= end,
+        ).group_by(
+            cast(Venta.created_at, Date),
+            func.extract("hour", Venta.created_at),
+        )
+    )
+    rows = result.all()
+
+    # Mapa (fecha, slot_idx) -> total
+    lookup: dict = {}
+    for r in rows:
+        h = int(r.hora)
+        for i, (h_start, h_end, _) in enumerate(_SLOTS):
+            if h_start <= h < h_end:
+                key = (r.fecha, i)
+                lookup[key] = lookup.get(key, 0.0) + float(r.total)
+                break
+
+    delta = (fecha_fin - fecha_inicio).days + 1
+    fechas = [fecha_inicio + timedelta(days=d) for d in range(delta)]
+
+    slots = [
+        SlotVenta(
+            label=label,
+            totales=[lookup.get((f, i), 0.0) for f in fechas],
+        )
+        for i, (_, _, label) in enumerate(_SLOTS)
+    ]
+
+    return MapaVentas(
+        fechas=[str(f) for f in fechas],
+        slots=slots,
+    )

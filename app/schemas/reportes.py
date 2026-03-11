@@ -32,3 +32,13 @@ class ProductoStockBajo(BaseModel):
     stock: int
     stock_minimo: int
     categoria: Optional[str] = None
+
+
+class SlotVenta(BaseModel):
+    label: str
+    totales: List[float]
+
+
+class MapaVentas(BaseModel):
+    fechas: List[str]
+    slots: List[SlotVenta]
