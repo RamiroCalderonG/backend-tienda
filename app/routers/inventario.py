@@ -30,8 +30,13 @@ async def restock(
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
 
+    costo = body.costo_unitario if body.costo_unitario is not None else float(producto.costo)
+
     stock_antes = producto.stock
     producto.stock = stock_antes + body.cantidad
+
+    if body.actualizar_costo and body.costo_unitario is not None:
+        producto.costo = body.costo_unitario
 
     movimiento = MovimientoInventario(
         id=str(uuid.uuid4()),
@@ -41,6 +46,7 @@ async def restock(
         cantidad=body.cantidad,
         stock_antes=stock_antes,
         stock_despues=producto.stock,
+        costo_unitario=costo,
         tipo="restock",
         notas=body.notas,
         user_id=current_user.id,

@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import engine, Base
 from app.models import Store, User, Categoria, Producto, Venta, VentaItem, MovimientoInventario  # noqa: F401 — needed for Base.metadata
-from app.routers import auth, categorias, productos, ventas, reportes, users, inventario
+from app.routers import auth, categorias, productos, ventas, reportes, users, inventario, stores
 
 
 @asynccontextmanager
@@ -32,3 +32,4 @@ app.include_router(ventas.router)
 app.include_router(reportes.router)
 app.include_router(users.router)
 app.include_router(inventario.router)
+app.include_router(stores.router)
