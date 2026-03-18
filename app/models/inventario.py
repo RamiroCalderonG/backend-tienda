@@ -18,6 +18,7 @@ class MovimientoInventario(Base):
     stock_despues: Mapped[int] = mapped_column(Integer, nullable=False)
     costo_unitario: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), nullable=True)  # costo real pagado (snapshot)
     tipo: Mapped[Optional[str]] = mapped_column(String, nullable=True)   # restock | merma | muestra | otro
+    fecha_caducidad: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # ISO date YYYY-MM-DD, solo restocks
     notas: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), nullable=False)
     user_name: Mapped[str] = mapped_column(String, nullable=False)         # snapshot

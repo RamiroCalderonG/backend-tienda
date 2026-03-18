@@ -8,6 +8,7 @@ class RestockRequest(BaseModel):
     cantidad: int = Field(gt=0, description="Cantidad a agregar (debe ser positiva)")
     costo_unitario: Optional[float] = Field(default=None, gt=0, description="Costo real pagado por unidad; si omite se usa el costo registrado del producto")
     actualizar_costo: bool = Field(default=False, description="Si True, actualiza el costo del producto con este valor")
+    fecha_caducidad: Optional[str] = Field(default=None, description="Fecha de caducidad del lote YYYY-MM-DD")
     notas: Optional[str] = None
 
 
@@ -16,6 +17,18 @@ class AjusteRequest(BaseModel):
     cantidad: int = Field(gt=0, description="Cantidad a descontar (positiva, se guarda negativa)")
     tipo: str = Field(description="merma | muestra | otro")
     notas: Optional[str] = None
+
+
+class LoteVencimiento(BaseModel):
+    movimiento_id: str
+    producto_id: Optional[str]
+    nombre_producto: str
+    cantidad: int
+    fecha_caducidad: str
+    dias_restantes: int
+
+    class Config:
+        from_attributes = True
 
 
 class MovimientoResponse(BaseModel):
@@ -27,6 +40,7 @@ class MovimientoResponse(BaseModel):
     stock_despues: int
     costo_unitario: Optional[float]
     tipo: Optional[str]
+    fecha_caducidad: Optional[str]
     notas: Optional[str]
     user_name: str
     created_at: datetime
