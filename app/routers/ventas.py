@@ -46,16 +46,19 @@ async def crear_venta(
             )
 
         # Aplicar promoción si corresponde
+        # precio_promocion = precio TOTAL del bundle (ej. "3 por $50")
         promo_result = await db.execute(
             select(Promocion).where(Promocion.producto_id == producto.id)
         )
         promocion = promo_result.scalar_one_or_none()
         if promocion and item.cantidad >= promocion.cantidad_requerida:
-            precio_efectivo = float(promocion.precio_promocion)
+            grupos = item.cantidad // promocion.cantidad_requerida
+            resto  = item.cantidad %  promocion.cantidad_requerida
+            subtotal = grupos * float(promocion.precio_promocion) + resto * float(producto.precio)
         else:
-            precio_efectivo = float(producto.precio)
+            subtotal = float(producto.precio) * item.cantidad
 
-        subtotal = precio_efectivo * item.cantidad
+        precio_efectivo = subtotal / item.cantidad
         total += subtotal
         items_data.append((producto, item.cantidad, subtotal, precio_efectivo))
 
