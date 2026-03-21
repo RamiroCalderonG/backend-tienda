@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.models.venta import Venta, VentaItem
 from app.models.producto import Producto
+from app.models.promocion import Promocion
 from app.models.user import User
 from app.schemas.ventas import VentaCreate, VentaResponse
 from app.dependencies.auth import get_current_user
@@ -43,9 +44,20 @@ async def crear_venta(
                 status_code=400,
                 detail=f"Stock insuficiente para '{producto.nombre}' (disponible: {producto.stock})",
             )
-        subtotal = float(producto.precio) * item.cantidad
+
+        # Aplicar promoción si corresponde
+        promo_result = await db.execute(
+            select(Promocion).where(Promocion.producto_id == producto.id)
+        )
+        promocion = promo_result.scalar_one_or_none()
+        if promocion and item.cantidad >= promocion.cantidad_requerida:
+            precio_efectivo = float(promocion.precio_promocion)
+        else:
+            precio_efectivo = float(producto.precio)
+
+        subtotal = precio_efectivo * item.cantidad
         total += subtotal
-        items_data.append((producto, item.cantidad, subtotal))
+        items_data.append((producto, item.cantidad, subtotal, precio_efectivo))
 
     # Crear venta
     venta = Venta(
@@ -58,13 +70,13 @@ async def crear_venta(
     db.add(venta)
 
     # Crear items y descontar stock
-    for producto, cantidad, subtotal in items_data:
+    for producto, cantidad, subtotal, precio_efectivo in items_data:
         db.add(VentaItem(
             id=str(uuid.uuid4()),
             venta_id=venta.id,
             producto_id=producto.id,
             nombre=producto.nombre,
-            precio=float(producto.precio),
+            precio=precio_efectivo,
             costo_unitario=float(producto.costo),
             cantidad=cantidad,
             subtotal=subtotal,

@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models.producto import Producto
+from app.models.promocion import Promocion  # noqa: F401 — needed for relationship eager load
 from app.models.user import User
 from app.schemas.productos import ProductoCreate, ProductoUpdate, ProductoResponse
 from app.dependencies.auth import get_current_user, require_admin
@@ -23,7 +24,7 @@ async def listar_productos(
 ):
     query = (
         select(Producto)
-        .options(selectinload(Producto.categoria))
+        .options(selectinload(Producto.categoria), selectinload(Producto.promocion))
         .where(Producto.store_id == current_user.store_id)
     )
     if solo_activos:
@@ -51,7 +52,7 @@ async def crear_producto(
 
     result = await db.execute(
         select(Producto)
-        .options(selectinload(Producto.categoria))
+        .options(selectinload(Producto.categoria), selectinload(Producto.promocion))
         .where(Producto.id == producto.id)
     )
     return result.scalar_one()
@@ -65,7 +66,7 @@ async def obtener_producto(
 ):
     result = await db.execute(
         select(Producto)
-        .options(selectinload(Producto.categoria))
+        .options(selectinload(Producto.categoria), selectinload(Producto.promocion))
         .where(Producto.id == producto_id, Producto.store_id == current_user.store_id)
     )
     producto = result.scalar_one_or_none()

@@ -22,3 +22,4 @@ class Producto(Base):
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
 
     categoria: Mapped[Optional["Categoria"]] = relationship("Categoria", back_populates="productos")
+    promocion: Mapped[Optional["Promocion"]] = relationship("Promocion", back_populates="producto", uselist=False)

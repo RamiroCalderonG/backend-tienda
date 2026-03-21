@@ -1,5 +1,6 @@
 from typing import Optional
 from pydantic import BaseModel
+from app.schemas.promociones import PromocionResponse
 
 
 # ── Categorías ──────────────────────────────────────────────
@@ -51,5 +52,6 @@ class ProductoResponse(BaseModel):
     stock_minimo: int
     activo: bool
     categoria: Optional[CategoriaResponse] = None
+    promocion: Optional[PromocionResponse] = None
 
     model_config = {"from_attributes": True}
