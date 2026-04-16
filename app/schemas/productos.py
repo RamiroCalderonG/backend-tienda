@@ -27,6 +27,7 @@ class ProductoCreate(BaseModel):
     precio: float
     stock: int = 0
     stock_minimo: int = 5
+    foto: Optional[str] = None
 
 
 class ProductoUpdate(BaseModel):
@@ -38,6 +39,7 @@ class ProductoUpdate(BaseModel):
     stock: Optional[int] = None
     stock_minimo: Optional[int] = None
     activo: Optional[bool] = None
+    foto: Optional[str] = None
 
 
 class ProductoResponse(BaseModel):
@@ -51,6 +53,7 @@ class ProductoResponse(BaseModel):
     stock: int
     stock_minimo: int
     activo: bool
+    foto: Optional[str] = None
     categoria: Optional[CategoriaResponse] = None
     promocion: Optional[PromocionResponse] = None
 

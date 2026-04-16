@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func as sqlfunc
 from typing import List, Optional
 from datetime import date, timedelta
 import uuid
@@ -10,7 +10,7 @@ from app.dependencies.auth import get_current_user
 from app.models.user import User
 from app.models.producto import Producto
 from app.models.inventario import MovimientoInventario
-from app.schemas.inventario import RestockRequest, AjusteRequest, MovimientoResponse, LoteVencimiento
+from app.schemas.inventario import RestockRequest, AjusteRequest, MovimientoResponse, LoteVencimiento, ValorStockResponse
 
 router = APIRouter(prefix="/inventario", tags=["inventario"])
 
@@ -133,6 +133,56 @@ async def listar_vencimientos(
         )
         for m in movimientos
     ]
+
+
+@router.get("/valor-stock", response_model=ValorStockResponse)
+async def valor_stock(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Calcula el valor real invertido en el stock actual usando costo ponderado histórico
+    en lugar del costo actual del producto (que puede haberse actualizado).
+    """
+    productos_result = await db.execute(
+        select(Producto).where(
+            Producto.store_id == current_user.store_id,
+            Producto.activo == True,
+            Producto.stock > 0,
+        )
+    )
+    productos = productos_result.scalars().all()
+
+    total_invertido = 0.0
+    total_valor_venta = 0.0
+
+    for p in productos:
+        # Costo ponderado: suma(cantidad × costo_unitario) / suma(cantidad) de todos los restocks
+        mov_result = await db.execute(
+            select(
+                sqlfunc.sum(MovimientoInventario.cantidad * MovimientoInventario.costo_unitario),
+                sqlfunc.sum(MovimientoInventario.cantidad),
+            ).where(
+                MovimientoInventario.producto_id == p.id,
+                MovimientoInventario.tipo == "restock",
+                MovimientoInventario.costo_unitario.isnot(None),
+            )
+        )
+        row = mov_result.one()
+        total_gastado, total_unidades = row
+
+        if total_gastado and total_unidades:
+            costo_ponderado = float(total_gastado) / float(total_unidades)
+        else:
+            costo_ponderado = float(p.costo)
+
+        total_invertido += costo_ponderado * p.stock
+        total_valor_venta += float(p.precio) * p.stock
+
+    return ValorStockResponse(
+        total_invertido=round(total_invertido, 2),
+        total_valor_venta=round(total_valor_venta, 2),
+    )
 
 
 @router.get("/movimientos", response_model=List[MovimientoResponse])

@@ -19,6 +19,7 @@ class Producto(Base):
     stock: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     stock_minimo: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
     activo: Mapped[bool] = mapped_column(Boolean, default=True)
+    foto: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
 
     categoria: Mapped[Optional["Categoria"]] = relationship("Categoria", back_populates="productos")

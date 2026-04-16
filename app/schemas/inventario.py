@@ -31,6 +31,11 @@ class LoteVencimiento(BaseModel):
         from_attributes = True
 
 
+class ValorStockResponse(BaseModel):
+    total_invertido: float
+    total_valor_venta: float
+
+
 class MovimientoResponse(BaseModel):
     id: str
     producto_id: Optional[str]
