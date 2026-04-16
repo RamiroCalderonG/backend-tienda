@@ -1,11 +1,17 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from app.limiter import limiter
 
 from app.database import engine, Base
 from app.models import Store, User, Categoria, Producto, Venta, VentaItem, MovimientoInventario, Promocion  # noqa: F401 — needed for Base.metadata
 from app.routers import auth, categorias, productos, ventas, reportes, users, inventario, stores, promociones
+
+
+limiter = Limiter(key_func=get_remote_address)
 
 
 @asynccontextmanager
@@ -16,10 +22,15 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Tiendita API", version="1.0.0", lifespan=lifespan, root_path="/api")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://tienda.calderonluna.org",
+        "http://localhost:61998",  # dev local
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
