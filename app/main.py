@@ -11,9 +11,6 @@ from app.models import Store, User, Categoria, Producto, Venta, VentaItem, Movim
 from app.routers import auth, categorias, productos, ventas, reportes, users, inventario, stores, promociones
 
 
-limiter = Limiter(key_func=get_remote_address)
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
