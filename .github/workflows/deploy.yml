@@ -2,23 +2,26 @@ name: Deploy Backend
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   deploy:
     runs-on: self-hosted
+
     steps:
-      - name: Pull latest code
-        run: |
-          cd /home/tienda/app
-          git pull origin main
+      - uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Sync código a /home/tienda/app
         run: |
-          cd /home/tienda/app
-          source venv/bin/activate
-          pip install -r requirements.txt
+          rsync -av --delete \
+            --exclude=venv \
+            --exclude=__pycache__ \
+            --exclude=.git \
+            --exclude='*.pyc' \
+            ./ /home/tienda/app/
 
-      - name: Restart service
-        run: sudo systemctl restart tienda-back
+      - name: Instalar dependencias
+        run: /home/tienda/app/venv/bin/pip install -r /home/tienda/app/requirements.txt
+
+      - name: Reiniciar backend
+        run: sudo systemctl restart tienda-back.service
